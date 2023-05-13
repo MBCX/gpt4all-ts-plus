@@ -35,7 +35,9 @@ export class GPT4All {
 
     static async listModels()
     {
-        
+        const modelNames = await fetch("https://raw.githubusercontent.com/MBCX/gpt4all-ts-plus/main/models.txt");
+        const models = await modelNames.text();
+        return models.split("\n");
     }
 
     // TODO: Implement a function to automatically
