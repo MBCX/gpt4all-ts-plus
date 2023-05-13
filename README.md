@@ -18,7 +18,7 @@ Download the project as a .zip file using the code > local > Download ZIP.
 
 It is as simple as:
 ```typescript
-import { GPT4AllPlus } from "where/you/placed/gpt4allplus/gpt4allp";
+import { GPT4AllPlus } from "where/you/placed/gpt4allplus/gpt4allplus.ts";
 
 const gpt4allp = new GPT4AllPlus(
     "modelToUse", // Specify model the name of the model from the list.
@@ -29,7 +29,7 @@ const gpt4allp = new GPT4AllPlus(
 
 ### Example usage:
 ```typescript
-import { GPT4AllPlus } from "where/you/placed/gpt4allplus/gpt4allp";
+import { GPT4AllPlus } from "where/you/placed/gpt4allplus/gpt4allplus.ts";
 
 // Instance of GPT4Allplus.
 
