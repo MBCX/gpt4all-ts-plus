@@ -28,6 +28,7 @@ export class Gpt4AllPlus
     #modelPath: string;
     #modelsAndExecParentDir: string;
     #modelName: GPT_MODELS;
+    #osName = platform();
 
     /**
      * @param model Model to be use from the list.
@@ -79,9 +80,7 @@ export class Gpt4AllPlus
     async #downloadExecutable()
     {
         let url = "";
-        const osPlatform = platform();
-
-        switch (osPlatform)
+        switch (this.#osName)
         {
             case "darwin":
                 url = "https://github.com/kuvaus/LlamaGPTJ-chat/releases/download/v0.1.8/chat-macos-latest-avx";
@@ -95,6 +94,7 @@ export class Gpt4AllPlus
             default:
                 throw `Your platform is not supported: ${platform}. Current binaries supported are for OSX (ARM and Intel), Linux and Windows.`
         }
+
         await this.#downloadFile(url, this.#executablePath);
 
         console.log(`File downloaded successfully to ${this.#executablePath}`);
