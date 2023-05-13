@@ -39,8 +39,8 @@ export class Gpt4AllPlus
     constructor(
         model: GPT_MODELS,
         modelsAndExecParentDir = `file://${homedir()}/.nomic`,
-        executablePath = `${modelsAndExecParentDir.split("file://")[1]}/gpt4all`,
-        modelPath = `${modelsAndExecParentDir.split("file://")[1]}/models/${model}.bin`,
+        executablePath = `${modelsAndExecParentDir.includes("file://") ? modelsAndExecParentDir.split("file://")[1] : modelsAndExecParentDir}/gpt4all`,
+        modelPath = `${modelsAndExecParentDir.includes("file://") ? modelsAndExecParentDir.split("file://")[1] : modelsAndExecParentDir}/models/${model}.bin`,
         decoderConfig: Record<string, any> = {}
     )
     {
