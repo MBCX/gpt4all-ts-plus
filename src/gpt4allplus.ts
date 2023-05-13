@@ -1,5 +1,10 @@
-import { spawn } from "child_process";
-import { homedir } from "os";
+import axios from "axios";
+import { exec, spawn } from "child_process";
+import { createWriteStream, existsSync } from "fs";
+import { mkdir } from "fs/promises";
+import { homedir, platform } from "os";
+import ProgressBar from "progress";
+import { promisify } from "util";
 
 export type GPT_MODELS =
     "ggml-gpt4all-l13b-snoozy" |
@@ -21,20 +26,26 @@ export class Gpt4AllPlus
     #decoderConfig: Record<string, any>;
     #executablePath: string;
     #modelPath: string;
+    #modelsAndExecParentDir: string;
+    #modelName: GPT_MODELS;
 
     /**
      * @param model Model to be use from the list.
-     * @param executablePath Where the executable binary for running the bot is located at? (default is C:/Users/YourUser/.nomic/gpt4all)
-     * @param modelPath Where the model to use is located (default is C:/Users/YourUser/.nomic/models/MODEL_NAME.bin)
-     * @param decoderConfig 
+     * @param modelsAndExecParentDir (OPTIONAL) The direcory parent where the models and executable file are located (default is C:/Users/YourUser/.nomic)
+     * @param executablePath (OPTIONAL) Where the executable binary for running the bot is located at? (default is modelsAndExecParentDir/gpt4all)
+     * @param modelPath (OPTIONAL) Where the model to use is located (default is modelsAndExecParentDir/models/MODEL_NAME.bin)
+     * @param decoderConfig (OPTIONAL)
      */
     constructor(
         model: GPT_MODELS,
-        executablePath = `${homedir()}/.nomic/gpt4all`,
-        modelPath = `${homedir()}/.nomic/models/${model}.bin`,
+        modelsAndExecParentDir = `file://${homedir()}/.nomic`,
+        executablePath = `${modelsAndExecParentDir.split("file://")[1]}/gpt4all`,
+        modelPath = `${modelsAndExecParentDir.split("file://")[1]}/models/${model}.bin`,
         decoderConfig: Record<string, any> = {}
     )
     {
+        this.#modelName = model;
+        this.#modelsAndExecParentDir = modelsAndExecParentDir;
         this.#decoderConfig = decoderConfig;
         this.#executablePath = executablePath;
         this.#modelPath = modelPath;
@@ -50,9 +61,100 @@ export class Gpt4AllPlus
         return models.split("\n") as GPT_MODELS[];
     }
 
-    // TODO: Implement a function to automatically
-    // download the models if the user doesn't have them.
-    async init() {}
+    /**
+     * Downloads the model you've picked to your computer.
+     */
+    async #downloadModel()
+    {
+        const modelURL = `https://gpt4all.io/models/${this.#modelName}.bin`;
+        await this.#downloadFile(modelURL, this.#modelPath);
+
+        console.log(`File downloaded successfully to ${this.#modelPath}`);
+    }
+
+    /**
+     * Downloads the required chat executable from LlamaGPTJ-chat
+     * for your platform.
+     */
+    async #downloadExecutable()
+    {
+        let url = "";
+        const osPlatform = platform();
+
+        switch (osPlatform)
+        {
+            case "darwin":
+                url = "https://github.com/kuvaus/LlamaGPTJ-chat/releases/download/v0.1.8/chat-macos-latest-avx";
+            break;
+            case "linux":
+                url = "https://github.com/kuvaus/LlamaGPTJ-chat/releases/download/v0.1.8/chat-ubuntu-latest-avx";
+            break;
+            case "win32":
+                url = "https://github.com/kuvaus/LlamaGPTJ-chat/releases/download/v0.1.8/chat-windows-latest-avx.exe";
+            break;
+            default:
+                throw `Your platform is not supported: ${platform}. Current binaries supported are for OSX (ARM and Intel), Linux and Windows.`
+        }
+        await this.#downloadFile(url, this.#executablePath);
+
+        console.log(`File downloaded successfully to ${this.#executablePath}`);
+    }
+
+    /**
+     * Downloads a file.
+     * @param url URL of the thing to download
+     * @param destination Where's going to be placed.
+     */
+    async #downloadFile(url: string, destination: string)
+    {
+        const { data, headers } = await axios.get(url, { responseType: "stream" });
+        const totalSize = Number.parseInt(headers["content-length"], 10);
+        const progress = new ProgressBar("[:bar] :percent :etas", {
+            complete: "=",
+            incomplete: " ",
+            width: 20,
+            total: totalSize
+        });
+        const dir = new URL(this.#modelsAndExecParentDir);
+
+        try {
+            await mkdir(dir, { recursive: true });
+        } catch (error) {
+            throw error;
+        }
+        const writer = createWriteStream(destination);
+
+        data.on("data", (chunk: any[]) => {
+            progress.tick(chunk.length);
+        });
+        data.pipe(writer);
+
+        return new Promise((resolve, reject) => {
+            writer.on("finish", resolve)
+            writer.on("error", reject);
+        })
+    }
+
+    /**
+     * Download required files.
+     * @param forceDownload Download the files again even if they're already on your computer?
+     */
+    async init(forceDownload = false)
+    {
+        const downloads = [] as Promise<void>[];
+
+        if (forceDownload || !existsSync(this.#executablePath))
+        {
+            downloads.push(this.#downloadExecutable());
+        }
+        
+        if (forceDownload || !existsSync(this.#modelPath))
+        {
+            downloads.push(this.#downloadModel());
+        }
+
+        await Promise.all(downloads);
+    }
 
     /**
      * Starts the chat programme in the background
