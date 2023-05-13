@@ -15,12 +15,19 @@ export type GPT_MODELS =
     "ggml-mpt-7b-instruct" |
     "ggml-mpt-7b-chat";
 
-export class GPT4All {
+export class Gpt4AllPlus
+{
     #bot: ReturnType<typeof spawn> | null = null;
     #decoderConfig: Record<string, any>;
     #executablePath: string;
     #modelPath: string;
 
+    /**
+     * @param model Model to be use from the list.
+     * @param executablePath Where the executable binary for running the bot is located at? (default is C:/Users/YourUser/.nomic/gpt4all)
+     * @param modelPath Where the model to use is located (default is C:/Users/YourUser/.nomic/models/MODEL_NAME.bin)
+     * @param decoderConfig 
+     */
     constructor(
         model: GPT_MODELS,
         executablePath = `${homedir()}/.nomic/gpt4all`,
@@ -33,20 +40,24 @@ export class GPT4All {
         this.#modelPath = modelPath;
     }
 
+    /**
+     * @returns A list of all available models
+     */
     static async listModels()
     {
         const modelNames = await fetch("https://raw.githubusercontent.com/MBCX/gpt4all-ts-plus/main/models.txt");
-        const models = await modelNames.text();
-        return models.split("\n");
+        const models = await modelNames.text() as GPT_MODELS;
+        return models.split("\n") as GPT_MODELS[];
     }
 
     // TODO: Implement a function to automatically
     // download the models if the user doesn't have them.
-    async init()
-    {
+    async init() {}
 
-    }
-
+    /**
+     * Starts the chat programme in the background
+     * and opens a connection with the bot.
+     */
     async open()
     {
         if (this.#bot != null)
@@ -83,9 +94,13 @@ export class GPT4All {
         })
     }
 
+    /**
+     * Closes a connection with the bot and frees
+     * used resources on the user's computer.
+     */
     close()
     {
-        return new Promise<boolean>((resolve, reject) => {
+        return new Promise<boolean>(resolve => {
             if (this.#bot == null)
             {
                 resolve(true);
@@ -100,9 +115,14 @@ export class GPT4All {
             {
                 this.#bot.kill();
             }
-        })
+        });
     }
 
+    /**
+     * Ask the bot and get an answer back
+     * @param prompt Question to be asked to the bot.
+     * @returns The bot's answer to the question.
+     */
     prompt(prompt: string)
     {
         if (this.#bot == null)
@@ -111,7 +131,7 @@ export class GPT4All {
         }
 
         this.#bot.stdin.write(prompt + "\n");
-        return new Promise((resolve, reject) => {
+        return new Promise<string | Error>((resolve, reject) => {
             let response = "";
             let timeoutID: NodeJS.Timeout;
 
@@ -129,6 +149,10 @@ export class GPT4All {
     
                     // Avoid weird rubbish text.
                     // finalResponse = finalResponse.split("[1m[32m[0m")[1];
+
+                    // Some models include "\r" while others
+                    // "\n". Generally, gpt4all models include
+                    // the latter.
                     if (finalResponse.includes("\r"))
                     {
                         newResponse = finalResponse.split("\r").filter(t => {
@@ -161,7 +185,9 @@ export class GPT4All {
                 }
                 catch
                 {
-                    reject("");
+                    // The bot has shutdown itself while
+                    // answering (common issue in my case)
+                    reject("Bot has shutdown out of nowhere!");
                 }
             }
 
