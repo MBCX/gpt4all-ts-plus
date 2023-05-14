@@ -1,9 +1,7 @@
-import axios from "axios";
 import { exec, spawn } from "child_process";
 import { createWriteStream, existsSync } from "fs";
 import { mkdir } from "fs/promises";
 import { homedir, platform } from "os";
-import ProgressBar from "progress";
 import { promisify } from "util";
 
 export type GPT_MODELS =
@@ -26,7 +24,6 @@ export class Gpt4AllPlus
     #decoderConfig: Record<string, any>;
     #executablePath: string;
     #modelPath: string;
-    #modelsAndExecParentDir: string;
     #modelName: GPT_MODELS;
     #osName = platform();
 
@@ -45,8 +42,19 @@ export class Gpt4AllPlus
         decoderConfig: Record<string, any> = {}
     )
     {
+        switch (platform())
+        {
+            case "win32":
+                executablePath = executablePath.replace("gpt4all", "chat-windows-latest-avx.exe");
+            break;
+            case "darwin":
+                executablePath = executablePath.replace("gpt4all", "chat-macos-latest-avx");
+            break;
+            case "linux":
+                executablePath = executablePath.replace("gpt4all", "chat-ubuntu-latest-avx");
+            break;
+        }
         this.#modelName = model;
-        this.#modelsAndExecParentDir = modelsAndExecParentDir;
         this.#decoderConfig = decoderConfig;
         this.#executablePath = executablePath;
         this.#modelPath = modelPath;
@@ -107,32 +115,32 @@ export class Gpt4AllPlus
      */
     async #downloadFile(url: string, destination: string)
     {
-        const { data, headers } = await axios.get(url, { responseType: "stream" });
-        const totalSize = Number.parseInt(headers["content-length"], 10);
-        const progress = new ProgressBar("[:bar] :percent :etas", {
-            complete: "=",
-            incomplete: " ",
-            width: 20,
-            total: totalSize
-        });
-        const dir = new URL(this.#modelsAndExecParentDir);
+        // const { data, headers } = await axios.get(url, { responseType: "stream" });
+        // const totalSize = Number.parseInt(headers["content-length"], 10);
+        // const progress = new ProgressBar("[:bar] :percent :etas", {
+        //     complete: "=",
+        //     incomplete: " ",
+        //     width: 20,
+        //     total: totalSize
+        // });
+        // const dir = new URL(this.#modelsAndExecParentDir);
 
-        try {
-            await mkdir(dir, { recursive: true });
-        } catch (error) {
-            throw error;
-        }
-        const writer = createWriteStream(destination);
+        // try {
+        //     await mkdir(dir, { recursive: true });
+        // } catch (error) {
+        //     throw error;
+        // }
+        // const writer = createWriteStream(destination);
 
-        data.on("data", (chunk: any[]) => {
-            progress.tick(chunk.length);
-        });
-        data.pipe(writer);
+        // data.on("data", (chunk: any[]) => {
+        //     progress.tick(chunk.length);
+        // });
+        // data.pipe(writer);
 
-        return new Promise((resolve, reject) => {
-            writer.on("finish", resolve)
-            writer.on("error", reject);
-        })
+        // return new Promise((resolve, reject) => {
+        //     writer.on("finish", resolve)
+        //     writer.on("error", reject);
+        // })
     }
 
     /**
