@@ -10,3 +10,4 @@ ggml-wizardLM-7B.q4_2
 ggml-mpt-7b-base
 ggml-mpt-7b-instruct
 ggml-mpt-7b-chat
+ggml-nous-gpt4-vicuna-13b
