@@ -252,6 +252,8 @@ export class Gpt4AllPlus
                 let newResponse: string | string[] = finalResponse;
                 try
                 {
+                    const unknownCharFilter = /[a-zA-Z0-9`{}#-]/gm;
+                    
                     if (finalResponse.endsWith(">"))
                     {
                         newResponse = newResponse.slice(0, -1);
@@ -262,20 +264,24 @@ export class Gpt4AllPlus
 
                     // Some models include "\r" while others
                     // "\n". Generally, gpt4all models include
-                    // the latter.
+                    // the latter. MPT-7B has this weird �.
                     if (finalResponse.includes("\r"))
                     {
-                        newResponse = finalResponse.split("\r").filter(t => {
-                            return /[a-zA-z0-9`{}]/gm.test(t);
+                        newResponse = finalResponse.split("\r").filter(c => {
+                            return unknownCharFilter.test(c);
                         });
                     }
                     else if (finalResponse.includes("\n"))
                     {
-                        newResponse = finalResponse.split("\n").filter(t => {
-                            return /[a-zA-z0-9`{}]/gm.test(t);
+                        newResponse = finalResponse.split("\n").filter(c => {
+                            return unknownCharFilter.test(c);
                         });
                     }
-    
+                    else if (finalResponse.includes("�"))
+                    {
+                        newResponse = finalResponse.split("�").filter(c => c !== "");
+                    }
+
                     if (Array.isArray(newResponse))
                     {
                         if (newResponse.length > 1)
@@ -293,11 +299,9 @@ export class Gpt4AllPlus
                     }
                     resolve(newResponse);
                 }
-                catch
+                catch (e)
                 {
-                    // The bot has shutdown itself while
-                    // answering (common issue in my case)
-                    reject("Bot has shutdown out of nowhere!");
+                    reject(e);
                 }
             }
 
