@@ -60,6 +60,16 @@ export class Gpt4AllPlus
         this.#modelPath = modelPath;
     }
 
+    get modelName()
+    {
+        return this.#modelName;
+    }
+
+    set modelName(val: GPT_MODELS)
+    {
+        this.#modelName = val;
+    }
+
     /**
      * @returns A list of all available models
      */
