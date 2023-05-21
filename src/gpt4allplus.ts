@@ -24,8 +24,9 @@ export class Gpt4AllPlus
     #decoderConfig: Record<string, any>;
     #executablePath: string;
     #modelPath: string;
-    #modelName: GPT_MODELS;
     #osName = platform();
+    modelName: GPT_MODELS;
+    modelTemperature = 0.9;
 
     /**
      * @param model Model to be use from the list.
@@ -54,20 +55,10 @@ export class Gpt4AllPlus
                 executablePath = executablePath.replace("gpt4all", "chat-ubuntu-latest-avx");
             break;
         }
-        this.#modelName = model;
+        this.modelName = model;
         this.#decoderConfig = decoderConfig;
         this.#executablePath = executablePath;
         this.#modelPath = modelPath;
-    }
-
-    get modelName()
-    {
-        return this.#modelName;
-    }
-
-    set modelName(val: GPT_MODELS)
-    {
-        this.#modelName = val;
     }
 
     /**
@@ -85,7 +76,7 @@ export class Gpt4AllPlus
      */
     async #downloadModel()
     {
-        const modelURL = `https://gpt4all.io/models/${this.#modelName}.bin`;
+        const modelURL = `https://gpt4all.io/models/${this.modelName}.bin`;
         await this.#downloadFile(modelURL, this.#modelPath);
 
         console.log(`File downloaded successfully to ${this.#modelPath}`);
@@ -188,7 +179,9 @@ export class Gpt4AllPlus
         const spawnArgs = [
             this.#executablePath,
             "--model",
-            this.#modelPath
+            this.#modelPath,
+            "--temp",
+            String(this.modelTemperature)
         ];
 
         for (const [key, value] of Object.entries(this.#decoderConfig))
