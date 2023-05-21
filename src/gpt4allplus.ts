@@ -46,13 +46,13 @@ export class Gpt4AllPlus
         switch (platform())
         {
             case "win32":
-                executablePath = executablePath.replace("gpt4all", "chat-windows-latest-avx.exe");
+                executablePath = executablePath.replace("gpt4all", "chat-windows-latest-avx2.exe");
             break;
             case "darwin":
-                executablePath = executablePath.replace("gpt4all", "chat-macos-latest-avx");
+                executablePath = executablePath.replace("gpt4all", "chat-macos-latest-avx2");
             break;
             case "linux":
-                executablePath = executablePath.replace("gpt4all", "chat-ubuntu-latest-avx");
+                executablePath = executablePath.replace("gpt4all", "chat-ubuntu-latest-avx2");
             break;
         }
         this.modelName = model;
