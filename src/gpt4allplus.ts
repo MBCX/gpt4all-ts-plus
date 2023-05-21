@@ -339,7 +339,7 @@ export class Gpt4AllPlus
                 {
                     timeoutID = setTimeout(() => {
                         terminateAndRespond(response)
-                    }, 16000);
+                    }, 4000);
                 }
                 response += text;
             });
