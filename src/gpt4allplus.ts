@@ -377,16 +377,19 @@ export class Gpt4AllPlus
                     clearTimeout(timeoutID);
                 }
 
-                if (text.includes(">"))
-                {
-                    terminateAndRespond(response);
-                }
-                else
-                {
-                    timeoutID = setTimeout(() => {
-                        terminateAndRespond(response)
-                    }, 4000);
-                }
+                // if (text.includes(">"))
+                // {
+                //     terminateAndRespond(response);
+                // }
+                // else
+                // {
+                //     timeoutID = setTimeout(() => {
+                //         terminateAndRespond(response)
+                //     }, 4000);
+                // }
+                timeoutID = setTimeout(() => {
+                    terminateAndRespond(response)
+                }, 2000);
                 response += text;
             });
 
