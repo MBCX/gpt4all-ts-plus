@@ -1,6 +1,6 @@
 import { exec, spawn } from "child_process";
 import { createWriteStream, existsSync } from "fs";
-import { mkdir } from "fs/promises";
+import { mkdir, writeFile } from "fs/promises";
 import { homedir, platform } from "os";
 import { promisify } from "util";
 
@@ -182,22 +182,68 @@ export class Gpt4AllPlus
     /**
      * Starts the chat programme in the background
      * and opens a connection with the bot.
+     * @param systemMessage An initial message modifing the behaviour of the assistant.
      */
-    async open()
+    async open(systemMessage = "")
     {
+        const modelNoTemplate = () => {
+            return [
+                this.#executablePath,
+                "--model",
+                this.#modelPath,
+                "--no-animation",
+                "--temp",
+                String(this.modelTemperature)
+            ];
+        }
+        const modelWithTemplate = () => {
+            return [
+                this.#executablePath,
+                "--model",
+                this.#modelPath,
+                "--no-animation",
+                "--temp",
+                String(this.modelTemperature),
+                "--load_template",
+                promptTemplatePath
+            ];
+        }
+
         if (this.#bot != null)
         {
             await this.close();
         }
+        const systemMessageTemplate = `### Instruction:\n${systemMessage}\n### Prompt:\n%1\n### Response:`;
+        const fileName = "promptTemplate";
+        const promptTemplatePath = `./${fileName}.txt`;
+        let spawnArgs = modelNoTemplate();
 
-        const spawnArgs = [
-            this.#executablePath,
-            "--model",
-            this.#modelPath,
-            "--no-animation",
-            "--temp",
-            String(this.modelTemperature),
-        ];
+        if (
+            systemMessage.trim() !== "" &&
+            !existsSync(promptTemplatePath)
+        )
+        {
+            try
+            {
+                await writeFile(promptTemplatePath, systemMessageTemplate);
+                spawnArgs.length = 0;
+                spawnArgs = modelWithTemplate();
+            }
+            catch (e)
+            {
+                console.error(
+                    "Was not able to create system prompt file. It won't be possible to modify assistant behaviour.",
+                    e
+                );
+            }
+        }
+        else if (existsSync(promptTemplatePath))
+        {
+            // TODO: Handle cases where files have not
+            // changed in content.
+            await writeFile(promptTemplatePath, systemMessageTemplate);
+            spawnArgs = modelWithTemplate();
+        }
 
         for (const [key, value] of Object.entries(this.#decoderConfig))
         {
