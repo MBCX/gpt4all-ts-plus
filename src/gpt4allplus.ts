@@ -193,7 +193,9 @@ export class Gpt4AllPlus
                 this.#modelPath,
                 "--no-animation",
                 "--temp",
-                String(this.modelTemperature)
+                String(this.modelTemperature),
+                "-n",
+                "8000"
             ];
         }
         const modelWithTemplate = () => {
@@ -205,7 +207,9 @@ export class Gpt4AllPlus
                 "--temp",
                 String(this.modelTemperature),
                 "--load_template",
-                promptTemplatePath
+                promptTemplatePath,
+                "-n",
+                "8000"
             ];
         }
 
@@ -377,19 +381,9 @@ export class Gpt4AllPlus
                     clearTimeout(timeoutID);
                 }
 
-                // if (text.includes(">"))
-                // {
-                //     terminateAndRespond(response);
-                // }
-                // else
-                // {
-                //     timeoutID = setTimeout(() => {
-                //         terminateAndRespond(response)
-                //     }, 4000);
-                // }
                 timeoutID = setTimeout(() => {
                     terminateAndRespond(response)
-                }, 2000);
+                }, 4000);
                 response += text;
             });
 
