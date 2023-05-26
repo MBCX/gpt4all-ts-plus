@@ -186,6 +186,7 @@ export class Gpt4AllPlus
      */
     async open(systemMessage = "")
     {
+        const tokenAmount = String(10000);
         const modelNoTemplate = () => {
             return [
                 this.#executablePath,
@@ -195,7 +196,7 @@ export class Gpt4AllPlus
                 "--temp",
                 String(this.modelTemperature),
                 "-n",
-                "8000"
+                tokenAmount
             ];
         }
         const modelWithTemplate = () => {
@@ -209,7 +210,7 @@ export class Gpt4AllPlus
                 "--load_template",
                 promptTemplatePath,
                 "-n",
-                "8000"
+                tokenAmount
             ];
         }
 
