@@ -1,6 +1,6 @@
 import { exec, spawn } from "child_process";
 import { createWriteStream, existsSync } from "fs";
-import { mkdir, writeFile } from "fs/promises";
+import { access, appendFile, constants, mkdir, readdir, rm, writeFile } from "fs/promises";
 import { homedir, platform } from "os";
 import { promisify } from "util";
 
@@ -27,6 +27,7 @@ export class Gpt4AllPlus
     #osName = platform();
     #modelName: GPT_MODELS;
     modelTemperature = 0.9;
+    chatLogDirectory = "";
 
     /**
      * @param model Model to be use from the list.
@@ -83,6 +84,56 @@ export class Gpt4AllPlus
         const modelNames = await fetch("https://raw.githubusercontent.com/MBCX/gpt4all-ts-plus/main/models.txt");
         const models = await modelNames.text() as GPT_MODELS;
         return models.split("\n") as GPT_MODELS[];
+    }
+
+    /**
+     * Saves the chat and contents to a log file
+     * @param dir Where to store this chat.
+     * @param name Name of the chat
+     * @param content Chat content to append to the file.
+     * @param systemPrompt The prompt "instruction" to guide the AI to the right behaviour.
+     * @param userContent The user's response or prompt.
+     * @param assistantContent Assistant response.
+     */
+    static async saveChatContent(
+        dir: string,
+        name: string,
+        systemPrompt: string,
+        userContent: string,
+        assistantContent: string
+    )
+    {
+        try {
+            await access(dir, constants.F_OK);
+        } catch (error) {
+            await mkdir(dir);
+        }
+        const template = `\n### Instruction:\n${systemPrompt}\n### Prompt: ${userContent}\n### Response: ${assistantContent}\n`.trim();
+        const appendChatContent = () => {
+            appendFile(`${dir}/${name}.txt`, `\n${template}`);
+        }
+        this.prototype.chatLogDirectory = dir;
+
+        if (existsSync(`${dir}/${name}.txt`))
+        {
+            appendChatContent();
+        }
+        else
+        {
+            await writeFile(`${dir}/${name}.txt`, template);
+        }
+    }
+
+    static async deleteChats(dir: string)
+    {
+        try {
+            await access(dir, constants.F_OK);
+            readdir(dir).then(async files => {
+                await Promise.all(files.map(f => rm(`${dir}/${f}`)));
+            });
+        } catch (error) {
+            
+        }
     }
 
     /**
@@ -183,10 +234,13 @@ export class Gpt4AllPlus
      * Starts the chat programme in the background
      * and opens a connection with the bot.
      * @param systemMessage An initial message modifing the behaviour of the assistant.
+     * @param chatLogName Name of the chat log file, load to make the assistant remember the conversation.
      */
-    async open(systemMessage = "")
+    async open(systemMessage = "", chatLogName = "")
     {
         const tokenAmount = String(10000);
+        const chatLogPath = `./${this.chatLogDirectory}/${chatLogName}.txt`;
+        const chatLogExists = existsSync(chatLogPath);
         const modelNoTemplate = () => {
             return [
                 this.#executablePath,
@@ -196,7 +250,9 @@ export class Gpt4AllPlus
                 "--temp",
                 String(this.modelTemperature),
                 "-n",
-                tokenAmount
+                tokenAmount,
+                "--load_log",
+                chatLogExists ? chatLogPath : ""
             ];
         }
         const modelWithTemplate = () => {
@@ -210,7 +266,9 @@ export class Gpt4AllPlus
                 "--load_template",
                 promptTemplatePath,
                 "-n",
-                tokenAmount
+                tokenAmount,
+                "--load_log",
+                chatLogExists ? chatLogPath : ""
             ];
         }
 
@@ -244,8 +302,6 @@ export class Gpt4AllPlus
         }
         else if (existsSync(promptTemplatePath))
         {
-            // TODO: Handle cases where files have not
-            // changed in content.
             await writeFile(promptTemplatePath, systemMessageTemplate);
             spawnArgs = modelWithTemplate();
         }

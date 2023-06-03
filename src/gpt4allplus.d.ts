@@ -32,5 +32,6 @@ export declare class Gpt4AllPlus {
     init(): Promise<void>;
     open(): Promise<boolean>;
     close(): Promise<boolean>;
+    save(name: string, dir: string): Promise<boolean>;
     prompt(prompt: string): Promise<string | Error>;
 }
