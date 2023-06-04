@@ -104,6 +104,7 @@ export class Gpt4AllPlus
         assistantContent: string
     )
     {
+        this.prototype.chatName = name;
         const finalName = this.prototype.chatName === "" ? name : this.prototype.chatName;
         try {
             await access(dir, constants.F_OK);
