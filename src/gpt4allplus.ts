@@ -27,7 +27,7 @@ export class Gpt4AllPlus
     #osName = platform();
     #modelName: GPT_MODELS;
     modelTemperature = 0.9;
-    chatLogDirectory = "";
+    chatLogDirectory = "./chats";
 
     /**
      * @param model Model to be use from the list.
@@ -239,7 +239,7 @@ export class Gpt4AllPlus
     async open(systemMessage = "", chatLogName = "")
     {
         const tokenAmount = String(10000);
-        const chatLogPath = `./${this.chatLogDirectory}/${chatLogName}.txt`;
+        const chatLogPath = `${this.chatLogDirectory}/${chatLogName}.txt`;
         const chatLogExists = existsSync(chatLogPath);
         const modelNoTemplate = () => {
             return [
