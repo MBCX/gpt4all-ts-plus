@@ -28,6 +28,7 @@ export class Gpt4AllPlus
     #modelName: GPT_MODELS;
     modelTemperature = 0.9;
     chatLogDirectory = "./chats";
+    chatName = "";
 
     /**
      * @param model Model to be use from the list.
@@ -103,6 +104,7 @@ export class Gpt4AllPlus
         assistantContent: string
     )
     {
+        const finalName = this.prototype.chatName === "" ? name : this.prototype.chatName;
         try {
             await access(dir, constants.F_OK);
         } catch (error) {
@@ -110,17 +112,17 @@ export class Gpt4AllPlus
         }
         const template = `\n### Instruction:\n${systemPrompt}\n### Prompt: ${userContent}\n### Response: ${assistantContent}\n`.trim();
         const appendChatContent = () => {
-            appendFile(`${dir}/${name}.txt`, `\n${template}`);
+            appendFile(`${dir}/${finalName}.txt`, `\n${template}`);
         }
         this.prototype.chatLogDirectory = dir;
 
-        if (existsSync(`${dir}/${name}.txt`))
+        if (existsSync(`${dir}/${finalName}.txt`))
         {
             appendChatContent();
         }
         else
         {
-            await writeFile(`${dir}/${name}.txt`, template);
+            await writeFile(`${dir}/${finalName}.txt`, template);
         }
     }
 
@@ -318,6 +320,7 @@ export class Gpt4AllPlus
                 stdio: ["pipe", "pipe", "ignore"]
             }
         );
+        this.chatName = chatLogName;
 
         await new Promise<boolean>(resolve => {
             this.#bot.stdout.on("data", data => {
