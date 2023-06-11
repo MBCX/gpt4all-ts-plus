@@ -1,6 +1,6 @@
 import { exec, spawn } from "child_process";
 import { createWriteStream, existsSync } from "fs";
-import { access, appendFile, constants, mkdir, readdir, rm, writeFile } from "fs/promises";
+import { access, appendFile, constants, mkdir, readdir, rm, unlink, writeFile } from "fs/promises";
 import { homedir, platform } from "os";
 import { promisify } from "util";
 
@@ -127,7 +127,7 @@ export class Gpt4AllPlus
         }
     }
 
-    static async deleteChats(dir: string)
+    static async deleteAllChats(dir: string)
     {
         try {
             await access(dir, constants.F_OK);
@@ -136,6 +136,14 @@ export class Gpt4AllPlus
             });
         } catch (error) {
             
+        }
+    }
+
+    static async deleteChat(dir: string, name: string)
+    {
+        if (existsSync(`${dir}/${name}.txt`))
+        {
+            await unlink(`${dir}/${name}.txt`);
         }
     }
 
