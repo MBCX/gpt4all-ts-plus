@@ -2,6 +2,7 @@ import { exec, spawn } from "child_process";
 import { createWriteStream, existsSync } from "fs";
 import { access, appendFile, constants, mkdir, readdir, rm, unlink, writeFile } from "fs/promises";
 import { homedir, platform } from "os";
+import { Readable } from "stream";
 import { promisify } from "util";
 
 export type GPT_MODELS =
@@ -372,95 +373,44 @@ export class Gpt4AllPlus
      */
     prompt(prompt: string)
     {
-        if (this.#bot == null)
-        {
+        if (this.#bot == null) {
             throw new Error("Bot is not initialised");
         }
 
+        let timeoutID: NodeJS.Timeout;
+        let finalResponse: string | string[] = "";
         this.#bot.stdin.write(prompt + "\n");
-        return new Promise<string | Error>((resolve, reject) => {
-            let response = "";
-            let timeoutID: NodeJS.Timeout;
-
-            const terminateAndRespond = (finalResponse: string) => {
-                this.#bot.stdout.removeAllListeners("error");
-                this.#bot.stdout.removeAllListeners("data");
-
-                let newResponse: string | string[] = finalResponse;
-                try
-                {
-                    const unknownCharFilter = /[a-zA-Z0-9`{}#-]/gm;
-                    
-                    if (finalResponse.endsWith(">"))
-                    {
-                        newResponse = newResponse.slice(0, -1);
-                    }
-    
-                    // Avoid weird rubbish text.
-                    // finalResponse = finalResponse.split("[1m[32m[0m")[1];
-
-                    // Some models include "\r" while others
-                    // "\n". Generally, gpt4all models include
-                    // the latter. MPT-7B has this weird �.
-                    if (finalResponse.includes("\r"))
-                    {
-                        newResponse = finalResponse.split("\r").filter(c => {
-                            return unknownCharFilter.test(c);
-                        });
-                    }
-                    else if (finalResponse.includes("\n"))
-                    {
-                        newResponse = finalResponse.split("\n").filter(c => {
-                            return unknownCharFilter.test(c);
-                        });
-                    }
-                    else if (finalResponse.includes("�"))
-                    {
-                        newResponse = finalResponse.split("�").filter(c => c !== "");
-                    }
-
-                    if (Array.isArray(newResponse))
-                    {
-                        if (newResponse.length > 1)
-                        {
-                            newResponse = newResponse.join(" ");
-                        }
-                        else
-                        {
-                            newResponse = newResponse[0].trim();
-                        }
-                    }
-                    else
-                    {
-                        newResponse = newResponse.trim();
-                    }
-                    resolve(newResponse);
-                }
-                catch (e)
-                {
-                    reject(e);
-                }
-            }
-
-            this.#bot.stdout.on("data", (data: Buffer) => {
-                const text = data.toString();
-
-                if (timeoutID)
-                {
-                    clearTimeout(timeoutID);
-                }
-
-                timeoutID = setTimeout(() => {
-                    terminateAndRespond(response)
-                }, 4000);
-                response += text;
-            });
-
-            this.#bot.stdout.on("error", (e: Error) => {
-                this.#bot.stdout.removeAllListeners("error");
-                this.#bot.stdout.removeAllListeners("data");
-                reject(e);
-            });
+        const responseStream = new Readable({
+            read() {}
         });
+
+        const terminateAndRespond = () => {
+            this.#bot.stdout.removeAllListeners("error");
+            this.#bot.stdout.removeAllListeners("data");
+            responseStream.push(finalResponse);
+            responseStream.push(null);
+        }
+        
+        const onDataReceived = (data: Buffer) => {
+            if (timeoutID) {
+                clearTimeout(timeoutID);
+            }
+            const text = data.toString();
+            responseStream.push(text);
+            timeoutID = setTimeout(() => {
+                terminateAndRespond();
+            }, 2000); // 4000ms = 4 seconds
+        };
+
+        this.#bot.stdout.on("data", onDataReceived);
+        this.#bot.stdout.on("error", (e: Error) => {
+            this.#bot.stdout.removeAllListeners("error");
+            this.#bot.stdout.removeAllListeners("data");
+            responseStream.emit('error', e);
+            responseStream.destroy(e);
+        });
+
+        return responseStream;
+
     }
 }
