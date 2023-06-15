@@ -26,9 +26,11 @@ export class Gpt4AllPlus {
     #modelPath: string;
     #osName = platform();
     #modelName: GPT_MODELS;
+    #maxTokens = 200;
     modelTemperature = 0.9;
     chatLogDirectory = "./chats";
     chatName = "";
+
 
     /**
      * @param model Model to be use from the list.
@@ -236,9 +238,14 @@ export class Gpt4AllPlus {
      * and opens a connection with the bot.
      * @param systemMessage An initial message modifing the behaviour of the assistant.
      * @param chatLogName Name of the chat log file, load to make the assistant remember the conversation.
+     * @param maxTokens The maximum amount of tokens (words) the assistant can process for any given response.
      */
-    async open(systemMessage = "", chatLogName = "") {
-        const tokenAmount = String(10000);
+    async open(
+        systemMessage = "",
+        chatLogName = "",
+        maxTokens = 200
+    ) {
+        const tokenAmount = String(maxTokens);
         const chatLogPath = `${this.chatLogDirectory}/${chatLogName}.txt`;
         const chatLogExists = existsSync(chatLogPath);
         const modelNoTemplate = () => {
