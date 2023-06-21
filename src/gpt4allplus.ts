@@ -349,15 +349,16 @@ export class Gpt4AllPlus {
         if (this.#bot == null) {
             throw new Error("Bot is not initialised");
         }
-
+    
         let timeoutID: NodeJS.Timeout;
         let isTerminated = false; // Track if the stream has been terminated
-
+        let lastText = ""; // Store previous text
+    
         this.#bot.stdin.write(prompt + "\n");
         const responseStream = new Readable({
             read() {}
         });
-
+    
         const terminateAndRespond = () => {
             if (isTerminated) return; // Return if already terminated
             isTerminated = true;
@@ -376,7 +377,7 @@ export class Gpt4AllPlus {
                 terminateAndRespond();
             }, 4000); // 4000ms = 4 seconds
         };
-
+    
         this.#bot.stdout.on("data", onDataReceived);
         this.#bot.stdout.on("error", (e: Error) => {
             if (isTerminated) return; // Return if already terminated
@@ -386,7 +387,7 @@ export class Gpt4AllPlus {
             responseStream.emit("error", e);
             responseStream.destroy(e);
         });
-
+    
         return responseStream;
     }
 }
