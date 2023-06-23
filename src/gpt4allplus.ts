@@ -375,7 +375,7 @@ export class Gpt4AllPlus {
             responseStream.push(text);
             timeoutID = setTimeout(() => {
                 terminateAndRespond();
-            }, 4000); // 4000ms = 4 seconds
+            }, 1250); // 1250ms = 1.25 seconds
         };
     
         this.#bot.stdout.on("data", onDataReceived);
