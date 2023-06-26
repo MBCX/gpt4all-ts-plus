@@ -26,10 +26,10 @@ export class Gpt4AllPlus {
     #modelPath: string;
     #osName = platform();
     #modelName: GPT_MODELS;
-    #maxTokens = 200;
     modelTemperature = 0.9;
     chatLogDirectory = "./chats";
     chatName = "";
+    isOpen = false;
 
 
     /**
@@ -313,6 +313,7 @@ export class Gpt4AllPlus {
         await new Promise<boolean>((resolve) => {
             this.#bot.stdout.on("data", (data) => {
                 if ((data as string).toString().includes(">")) {
+                    this.isOpen = true;
                     resolve(true);
                 }
             });
@@ -331,6 +332,7 @@ export class Gpt4AllPlus {
 
             this.#bot.on("close", () => {
                 this.#bot = null;
+                this.isOpen = false;
                 resolve(true);
             });
 
