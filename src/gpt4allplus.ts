@@ -311,8 +311,8 @@ export class Gpt4AllPlus {
         this.chatName = chatLogName;
 
         await new Promise<boolean>((resolve) => {
-            this.#bot.stdout.on("data", (data) => {
-                if ((data as string).toString().includes(">")) {
+            this.#bot.stdout.on("data", (data: Buffer) => {
+                if (data.toString().includes(">")) {
                     this.isOpen = true;
                     resolve(true);
                 }
@@ -354,7 +354,7 @@ export class Gpt4AllPlus {
     
         let timeoutID: NodeJS.Timeout;
         let isTerminated = false; // Track if the stream has been terminated
-        let lastText = ""; // Store previous text
+        let textBuffer = "";
     
         this.#bot.stdin.write(prompt + "\n");
         const responseStream = new Readable({
@@ -374,10 +374,22 @@ export class Gpt4AllPlus {
                 clearTimeout(timeoutID);
             }
             const text = data.toString();
+            textBuffer += data.toString();
             responseStream.push(text);
+
+            if (
+                textBuffer.trim().endsWith(" >\n") ||
+                textBuffer.trim().endsWith(" >\r\n") ||
+                textBuffer.trim().endsWith("\n>") ||
+                textBuffer.trim().endsWith("\r\n>")
+            )
+            {
+                terminateAndRespond();
+            }
+
             timeoutID = setTimeout(() => {
                 terminateAndRespond();
-            }, 1250); // 1250ms = 1.25 seconds
+            }, 3000); // 3000ms = 3 seconds
         };
     
         this.#bot.stdout.on("data", onDataReceived);
