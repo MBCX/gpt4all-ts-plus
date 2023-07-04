@@ -364,9 +364,15 @@ export class Gpt4AllPlus {
         const terminateAndRespond = () => {
             if (isTerminated) return; // Return if already terminated
             isTerminated = true;
-            this.#bot.stdout.removeAllListeners("error");
-            this.#bot.stdout.removeAllListeners("data");
-            responseStream.push(null);
+            try {
+                this.#bot.stdout.removeAllListeners("error");
+                this.#bot.stdout.removeAllListeners("data");
+            } catch (error) {
+                console.error(error);
+            } finally {
+                responseStream.push(null);
+                this.#bot = null;
+            }
         };
 
         const onDataReceived = (data: Buffer) => {
