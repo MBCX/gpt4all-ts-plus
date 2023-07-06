@@ -325,6 +325,7 @@ export class Gpt4AllPlus {
      * used resources on the user's computer.
      */
     close() {
+        this.isOpen = false;
         return new Promise<boolean>((resolve) => {
             if (this.#bot == null) {
                 resolve(true);
@@ -332,7 +333,6 @@ export class Gpt4AllPlus {
 
             this.#bot.on("close", () => {
                 this.#bot = null;
-                this.isOpen = false;
                 resolve(true);
             });
 
@@ -371,7 +371,6 @@ export class Gpt4AllPlus {
                 console.error(error);
             } finally {
                 responseStream.push(null);
-                this.#bot = null;
             }
         };
 
