@@ -351,8 +351,6 @@ export class Gpt4AllPlus {
         if (this.#bot == null) {
             throw new Error("Bot is not initialised");
         }
-    
-        let timeoutID: NodeJS.Timeout;
         let isTerminated = false; // Track if the stream has been terminated
         let textBuffer = "";
     
@@ -375,11 +373,8 @@ export class Gpt4AllPlus {
         };
 
         const onDataReceived = (data: Buffer) => {
-            if (timeoutID) {
-                clearTimeout(timeoutID);
-            }
             const text = data.toString();
-            textBuffer += data.toString();
+            textBuffer += text;
             responseStream.push(text);
 
             if (
@@ -391,10 +386,6 @@ export class Gpt4AllPlus {
             {
                 terminateAndRespond();
             }
-
-            timeoutID = setTimeout(() => {
-                terminateAndRespond();
-            }, 3000); // 3000ms = 3 seconds
         };
     
         this.#bot.stdout.on("data", onDataReceived);
