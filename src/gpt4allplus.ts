@@ -94,6 +94,15 @@ export class Gpt4AllPlus {
         return models.split("\n") as GPT_MODELS[];
     }
 
+    static async listChats()
+    {
+        try {
+            return readdir(this.prototype.chatLogDirectory ?? "./chats");
+        } catch (error) {
+            return [];
+        }
+    }
+
     /**
      * Saves the chat and contents to a log file
      * @param dir Where to store this chat.
